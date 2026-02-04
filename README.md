@@ -546,13 +546,7 @@ ModuleNotFoundError: No module named 'app'
 - **Technologies:** 15+
 - **Test Coverage:** Growing
 
----
 
-**Made with ❤️ for the developer community**
-
-For questions or support, please open an issue on GitHub.
-
----
 
 ## 🌟 Star History
 

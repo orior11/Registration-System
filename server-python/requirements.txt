@@ -1,0 +1,61 @@
+# ============================================
+# FASTAPI & CORE WEB FRAMEWORK
+# ============================================
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+python-multipart==0.0.18
+
+# ============================================
+# DATABASE - MongoDB
+# ============================================
+motor==3.6.0
+pymongo==4.9.1
+
+# ============================================
+# AUTHENTICATION & SECURITY
+# ============================================
+# Password hashing
+bcrypt==4.2.1
+
+# JWT tokens
+python-jose[cryptography]==3.3.0
+
+# OAuth (Google, GitHub, etc.)
+authlib==1.4.0
+
+# ============================================
+# DATA VALIDATION & SETTINGS
+# ============================================
+pydantic==2.10.4
+pydantic-settings==2.6.1
+email-validator==2.2.0
+
+# ============================================
+# HTTP CLIENT
+# ============================================
+httpx==0.28.1
+
+# ============================================
+# RATE LIMITING
+# ============================================
+slowapi==0.1.9
+
+# ============================================
+# ENVIRONMENT MANAGEMENT
+# ============================================
+python-dotenv==1.0.1
+
+# ============================================
+# CORS & MIDDLEWARE
+# ============================================
+# (included in FastAPI)
+
+# ============================================
+# OPTIONAL: DEVELOPMENT & TESTING
+# ============================================
+# pytest==8.3.4
+# pytest-asyncio==0.25.0
+# httpx==0.28.1  # for testing (already listed above)
+# black==24.10.0  # code formatter
+# flake8==7.1.1  # linter
+# mypy==1.13.0  # type checker

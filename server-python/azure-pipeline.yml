@@ -1,0 +1,148 @@
+# Azure DevOps Pipeline for CI/CD
+# Builds and deploys the authentication API to Azure Container Instances
+
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+  paths:
+    include:
+      - server-python/**
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  - group: auth-api-secrets  # Variable group in Azure DevOps
+  - name: imageName
+    value: 'auth-api'
+  - name: imageTag
+    value: '$(Build.BuildId)'
+  - name: acrName
+    value: 'authapiregistry'
+  - name: resourceGroup
+    value: 'auth-api-rg'
+  - name: containerName
+    value: 'auth-api-container'
+
+stages:
+  - stage: Build
+    displayName: 'Build and Push Docker Image'
+    jobs:
+      - job: BuildJob
+        displayName: 'Build Docker Image'
+        steps:
+          - task: Docker@2
+            displayName: 'Build Docker Image'
+            inputs:
+              containerRegistry: 'Azure Container Registry'
+              repository: '$(imageName)'
+              command: 'build'
+              Dockerfile: 'server-python/Dockerfile'
+              tags: |
+                $(imageTag)
+                latest
+
+          - task: Docker@2
+            displayName: 'Push Docker Image'
+            inputs:
+              containerRegistry: 'Azure Container Registry'
+              repository: '$(imageName)'
+              command: 'push'
+              tags: |
+                $(imageTag)
+                latest
+
+  - stage: Deploy
+    displayName: 'Deploy to Azure Container Instances'
+    dependsOn: Build
+    condition: succeeded()
+    jobs:
+      - deployment: DeployJob
+        displayName: 'Deploy to ACI'
+        environment: 'production'
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: AzureCLI@2
+                  displayName: 'Deploy Container Instance'
+                  inputs:
+                    azureSubscription: 'Azure Subscription'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      # Delete old container if exists
+                      az container delete \
+                        --resource-group $(resourceGroup) \
+                        --name $(containerName) \
+                        --yes || true
+
+                      # Create new container
+                      az container create \
+                        --resource-group $(resourceGroup) \
+                        --name $(containerName) \
+                        --image $(acrName).azurecr.io/$(imageName):$(imageTag) \
+                        --registry-login-server $(acrName).azurecr.io \
+                        --dns-name-label my-auth-api \
+                        --ports 8000 \
+                        --cpu 1 \
+                        --memory 1 \
+                        --environment-variables \
+                          JWT_ALGORITHM=HS256 \
+                          JWT_EXPIRATION_HOURS=24 \
+                          EMAIL_SERVICE=azure \
+                        --secure-environment-variables \
+                          MONGODB_URI=$(MONGODB_URI) \
+                          JWT_SECRET=$(JWT_SECRET) \
+                          GOOGLE_CLIENT_ID=$(GOOGLE_CLIENT_ID) \
+                          GOOGLE_CLIENT_SECRET=$(GOOGLE_CLIENT_SECRET) \
+                          FACEBOOK_APP_ID=$(FACEBOOK_APP_ID) \
+                          FACEBOOK_APP_SECRET=$(FACEBOOK_APP_SECRET) \
+                          AZURE_COMMUNICATION_CONNECTION_STRING=$(AZURE_COMMUNICATION_CONNECTION_STRING) \
+                        --restart-policy OnFailure
+
+                - task: AzureCLI@2
+                  displayName: 'Get Container FQDN'
+                  inputs:
+                    azureSubscription: 'Azure Subscription'
+                    scriptType: 'bash'
+                    scriptLocation: 'inlineScript'
+                    inlineScript: |
+                      FQDN=$(az container show \
+                        --resource-group $(resourceGroup) \
+                        --name $(containerName) \
+                        --query ipAddress.fqdn \
+                        --output tsv)
+                      
+                      echo "##vso[task.setvariable variable=containerFQDN]$FQDN"
+                      echo "API URL: http://${FQDN}:8000"
+                      echo "API Docs: http://${FQDN}:8000/docs"
+
+  - stage: Test
+    displayName: 'Integration Tests'
+    dependsOn: Deploy
+    condition: succeeded()
+    jobs:
+      - job: TestJob
+        displayName: 'Run Integration Tests'
+        steps:
+          - task: Bash@3
+            displayName: 'Health Check'
+            inputs:
+              targetType: 'inline'
+              script: |
+                echo "Running health check..."
+                curl -f http://$(containerFQDN):8000/health || exit 1
+                echo "Health check passed!"
+
+          - task: Bash@3
+            displayName: 'API Tests'
+            inputs:
+              targetType: 'inline'
+              script: |
+                echo "Running API tests..."
+                # Add your test commands here
+                curl -f http://$(containerFQDN):8000/docs || exit 1
+                echo "API tests passed!"

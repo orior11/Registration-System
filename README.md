@@ -4,10 +4,6 @@
 
 https://youtu.be/tgonLSCvH3w
 
-# Clone the repository
-git clone https://github.com/orior11/fullstack-ai.git
-cd fullstack-ai
-
 # Run both servers
 python run_app.py
 This will automatically: 1. ✅ Install Python dependencies 2. ✅ Install Node.js dependencies 3. ✅ Start FastAPI backend on http://localhost:8000 4. ✅ Start React frontend on http://localhost:5173 5. ✅ Open your browser automatically --- ## 📦 Manual Setup ### Backend Setup

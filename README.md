@@ -7,7 +7,7 @@ A professional, end-to-end authentication system featuring a **FastAPI** backend
 ---
 
 ## 📺 Demo & Preview
-[![Watch the Demo](https://img.shields.io/badge/YouTube-Demo-red?style=for-the-badge&logo=youtube)](https://youtu.be/tgonLSCvH3w)
+https://youtu.be/tgonLSCvH3w
 
 ---
 
